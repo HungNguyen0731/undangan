@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:18-alpine AS build
 
 # Đặt thư mục làm việc trong container
 WORKDIR /app
@@ -12,8 +12,14 @@ RUN npm install && npm run build:public
 # Sao chép toàn bộ source code vào container
 COPY . .
 
-# Mở cổng 80 để phục vụ ứng dụng
+# Giai đoạn production: sử dụng Nginx để phục vụ các tệp tĩnh
+FROM nginx:alpine
+
+# Sao chép thư mục public từ giai đoạn build sang Nginx
+COPY --from=build /app/public /usr/share/nginx/html
+
+# Expose cổng 80 để truy cập ứng dụng
 EXPOSE 80
 
-# Chạy ứng dụng ở chế độ development
-CMD ["npx", "esbuild", "js/*.js", "--bundle", "--outdir=dist", "--servedir=."]
+# Khởi động Nginx
+CMD ["nginx", "-g", "daemon off;"]
