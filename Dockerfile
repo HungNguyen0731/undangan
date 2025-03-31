@@ -1,17 +1,19 @@
-# Sử dụng hình ảnh Nginx chính thức làm cơ sở
-FROM nginx:alpine
+FROM node:18-alpine
 
 # Đặt thư mục làm việc trong container
-WORKDIR /usr/share/nginx/html
+WORKDIR /app
 
-# Xóa các tệp mặc định của Nginx
-RUN rm -rf ./*
+# Sao chép package.json và package-lock.json trước để cache cài đặt dependencies
+COPY package.json package-lock.json ./
 
-# Sao chép tất cả các tệp từ project vào thư mục làm việc
+# Cài đặt dependencies
+RUN npm install && npm run build:public
+
+# Sao chép toàn bộ source code vào container
 COPY . .
 
-# Expose cổng 80 để truy cập ứng dụng
+# Mở cổng 80 để phục vụ ứng dụng
 EXPOSE 80
 
-# Lệnh mặc định để chạy Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Chạy ứng dụng ở chế độ development
+CMD ["npx", "esbuild", "js/*.js", "--bundle", "--outdir=dist", "--servedir=."]
